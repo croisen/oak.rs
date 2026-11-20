@@ -79,7 +79,7 @@ impl<'config> Pratt<RustLanguage> for RustParser<'config> {
             Shl | Shr => (10, Associativity::Left),
             Plus | Minus => (11, Associativity::Left),
             Star | Slash | Percent => (12, Associativity::Left),
-            LeftParen | LeftBracket | Dot => (14, Associativity::Left),
+            LeftParen | LeftBracket | Dot | Bang => (14, Associativity::Left),
             _ => return None,
         };
 
@@ -88,6 +88,40 @@ impl<'config> Pratt<RustLanguage> for RustParser<'config> {
         }
 
         match kind {
+            Bang => {
+                let cp = state.checkpoint();
+                state.push_child(left);
+                state.bump();
+                let expect = if state.eat(LeftBracket) {
+                    RightBracket
+                }
+                else if state.eat(LeftParen) {
+                    RightParen
+                }
+                else {
+                    let Some(text) = state.peek_text()
+                    else {
+                        state.unexpected_eof();
+                        return None;
+                    };
+
+                    state.record_unexpected_token(text.to_string());
+                    state.restore(cp);
+                    return None;
+                };
+
+                if !state.at(expect) {
+                    loop {
+                        PrattParser::parse(state, 0, self);
+                        if !state.eat(Comma) {
+                            break;
+                        }
+                    }
+                }
+
+                state.expect(expect).ok();
+                Some(state.finish_at(cp, RE::CallExpression))
+            }
             LeftParen => {
                 let cp = state.checkpoint();
                 state.push_child(left);
@@ -373,6 +407,11 @@ impl<'config> RustParser<'config> {
     fn parse_let_statement<'a, S: oak_core::source::Source + ?Sized>(&self, state: &mut ParserState<'a, RustLanguage, S>) -> Result<(), OakError> {
         let cp = state.checkpoint();
         state.bump(); // let
+        // why does it not consume mut?
+        if state.peek_kind() == Some(crate::lexer::RustTokenType::Mut) {
+            state.bump();
+        }
+
         state.expect(crate::lexer::RustTokenType::Identifier).ok();
         if state.eat(crate::lexer::RustTokenType::Eq) {
             PrattParser::parse(state, 0, self);
