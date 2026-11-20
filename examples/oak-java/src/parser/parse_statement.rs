@@ -228,14 +228,14 @@ pub(crate) fn parse_for_statement<'a, S: Source + ?Sized, P: Pratt<JavaLanguage>
         let pk = state.peek_kind();
         match pk {
             Some(Int) | Some(Boolean) | Some(Void) | Some(Long) | Some(Float) | Some(Double) | Some(Char) | Some(Byte) | Some(Short) => {
-                parser.parse_variable_declaration(state)?;
+                parser.parse_variable_declaration_without_semicolon(state)?;
                 state.finish_at(cp, JavaElementType::VariableDeclaration);
             }
             Some(Identifier) => {
                 let snapshot = state.checkpoint();
                 if parser.parse_type(state).is_ok() && state.at(Identifier) {
                     state.restore(snapshot);
-                    parser.parse_variable_declaration(state)?;
+                    parser.parse_variable_declaration_without_semicolon(state)?;
                     state.finish_at(cp, JavaElementType::VariableDeclaration);
                 }
                 else {

@@ -278,7 +278,7 @@ impl<'config> JavaLexer<'config> {
                     JavaTokenType::IntegerLiteral
                 };
 
-                eprintln!("DEBUG: Lexer classified '{}' as {:?} at {}..{}", text, kind, start, state.get_position());
+                // eprintln!("DEBUG: Lexer classified '{}' as {:?} at {}..{}", text, kind, start, state.get_position());
                 state.add_token(kind, start, state.get_position());
                 return true;
             }
@@ -306,7 +306,7 @@ impl<'config> JavaLexer<'config> {
                 let text = state.get_text_in((start..state.get_position()).into());
                 let token_kind = self.classify_identifier(text.as_ref());
 
-                eprintln!("DEBUG: Lexer classified '{}' as {:?} at {}..{}", text, token_kind, start, state.get_position());
+                // eprintln!("DEBUG: Lexer classified '{}' as {:?} at {}..{}", text, token_kind, start, state.get_position());
                 state.add_token(token_kind, start, state.get_position());
                 true
             }

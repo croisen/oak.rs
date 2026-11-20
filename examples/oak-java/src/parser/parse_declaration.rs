@@ -347,4 +347,24 @@ pub trait DeclarationParser: Pratt<JavaLanguage> {
         state.eat(Semicolon);
         Ok(())
     }
+
+    fn parse_variable_declaration_without_semicolon<'a, S: Source + ?Sized>(&self, state: &mut State<'a, S>) -> Result<(), OakError>
+    where
+        Self: Sized,
+    {
+        use JavaTokenType::*;
+        self.parse_type(state)?;
+        self.skip_trivia(state);
+        let cp = state.checkpoint();
+        state.expect(Identifier).ok();
+        state.finish_at(cp, JavaElementType::Identifier);
+        self.skip_trivia(state);
+        if state.eat(Assign) {
+            self.skip_trivia(state);
+            PrattParser::parse(state, 0, self);
+        }
+        self.skip_trivia(state);
+        // state.eat(Semicolon); // what a bug in a for loop
+        Ok(())
+    }
 }
